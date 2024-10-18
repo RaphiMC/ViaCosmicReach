@@ -76,7 +76,7 @@ jar {
 }
 
 tasks.register("runViaProxy", JavaExec) {
-    dependsOn "jar"
+    dependsOn tasks.jar
 
     mainClass = "net.raphimc.viaproxy.ViaProxy"
     classpath sourceSets.main.compileClasspath
@@ -85,16 +85,12 @@ tasks.register("runViaProxy", JavaExec) {
 
     doFirst {
         def pluginsDir = new File(workingDir, "plugins")
-        if (!pluginsDir.exists())
-            pluginsDir.mkdirs()
-
-        // Copy JAR into plugins dir
-        new File(pluginsDir, "ViaCosmicReach.jar").bytes = tasks.jar.archiveFile.get().asFile.bytes
+        pluginsDir.mkdirs()
+        new File(pluginsDir, "${project.name}.jar").bytes = tasks.jar.archiveFile.get().asFile.bytes
     }
 
     doLast {
-        // Delete JAR from plugins dir
-        new File(workingDir, "plugins/ViaCosmicReach.jar").delete()
+        new File(workingDir, "plugins/${project.name}.jar").delete()
     }
 }
 
