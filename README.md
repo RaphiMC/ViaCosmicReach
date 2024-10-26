@@ -1,16 +1,25 @@
 # ViaCosmicReach
 [ViaProxy](https://github.com/RaphiMC/ViaProxy) plugin which allows Minecraft clients to join [CosmicReach](https://finalforeach.itch.io/cosmic-reach) servers.
 
+**Supported Cosmic Reach server versions:** 0.3.2-pre6  
+**Supported Minecraft client versions:** 1.20-1.21.1
+
 ## Features
 **This project is mostly for fun and most likely won't ever be fully feature complete.**
+- [ ] Itch account authentication
 - [x] Joining
 - [x] Chat
 - [x] Chunks
 - [x] Movement
 - [x] Block updates
 - [x] Player spawning
-- [ ] Inventories
-- [ ] World interaction
+- [ ] Entity spawning
+- [ ] Items
+- [ ] Inventory Containers
+- [ ] Block breaking
+- [ ] Block placing
+- [ ] Block interaction
+- [ ] Entity interaction
 - [ ] Sounds
 
 ## Installation and Usage

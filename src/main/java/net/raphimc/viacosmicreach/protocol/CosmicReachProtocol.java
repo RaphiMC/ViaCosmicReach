@@ -137,7 +137,7 @@ public class CosmicReachProtocol extends StatelessTransitionProtocol<Clientbound
             final UUID uuid = new UUID(0L, entityId);
 
             final PacketWrapper playerInfoUpdate = PacketWrapper.create(ClientboundPackets1_21.PLAYER_INFO_UPDATE, wrapper.user());
-            playerInfoUpdate.write(Types.PROFILE_ACTIONS_ENUM, BitSets.create(6, PlayerInfoUpdateAction.ADD_PLAYER.ordinal(), PlayerInfoUpdateAction.UPDATE_LISTED.ordinal())); // actions
+            playerInfoUpdate.write(Types.PROFILE_ACTIONS_ENUM1_19_3, BitSets.create(6, PlayerInfoUpdateAction.ADD_PLAYER.ordinal(), PlayerInfoUpdateAction.UPDATE_LISTED.ordinal())); // actions
             playerInfoUpdate.write(Types.VAR_INT, 1); // length
             playerInfoUpdate.write(Types.UUID, uuid); // uuid
             playerInfoUpdate.write(Types.STRING, account.displayName()); // username
@@ -279,7 +279,7 @@ public class CosmicReachProtocol extends StatelessTransitionProtocol<Clientbound
             info.setUuid(uuid);
             ClientboundBaseProtocol1_7.onLoginSuccess(wrapper.user());
 
-            final PacketWrapper gameProfile = PacketWrapper.create(ClientboundLoginPackets.GAME_PROFILE, wrapper.user());
+            final PacketWrapper gameProfile = PacketWrapper.create(ClientboundLoginPackets.LOGIN_FINISHED, wrapper.user());
             gameProfile.write(Types.UUID, uuid); // uuid
             gameProfile.write(Types.STRING, username); // username
             gameProfile.write(Types.VAR_INT, 0); // properties length
@@ -344,7 +344,7 @@ public class CosmicReachProtocol extends StatelessTransitionProtocol<Clientbound
             tabList.send(CosmicReachProtocol.class);
 
             final PacketWrapper playerInfoUpdate = PacketWrapper.create(ClientboundPackets1_21.PLAYER_INFO_UPDATE, wrapper.user());
-            playerInfoUpdate.write(Types.PROFILE_ACTIONS_ENUM, BitSets.create(6, PlayerInfoUpdateAction.ADD_PLAYER.ordinal(), PlayerInfoUpdateAction.UPDATE_GAME_MODE.ordinal(), PlayerInfoUpdateAction.UPDATE_LISTED.ordinal())); // actions
+            playerInfoUpdate.write(Types.PROFILE_ACTIONS_ENUM1_19_3, BitSets.create(6, PlayerInfoUpdateAction.ADD_PLAYER.ordinal(), PlayerInfoUpdateAction.UPDATE_GAME_MODE.ordinal(), PlayerInfoUpdateAction.UPDATE_LISTED.ordinal())); // actions
             playerInfoUpdate.write(Types.VAR_INT, 1); // length
             playerInfoUpdate.write(Types.UUID, uuid); // uuid
             playerInfoUpdate.write(Types.STRING, username); // username
