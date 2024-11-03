@@ -20,7 +20,8 @@ package net.raphimc.viacosmicreach.protocol.storage;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.viaversion.viaversion.api.connection.StorableObject;
-import net.raphimc.viacosmicreach.protocol.model.Account;
+import net.raphimc.viacosmicreach.protocol.model.UniqueEntityId;
+import net.raphimc.viacosmicreach.protocol.model.account.Account;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -30,6 +31,7 @@ public class EntityTracker implements StorableObject {
 
     private Account clientPlayerAccount;
     private final BiMap<String, Integer> playerMap = HashBiMap.create();
+    private final BiMap<UniqueEntityId, Integer> entityMap = HashBiMap.create();
     private final BiMap<String, Account> accountMap = HashBiMap.create();
 
     public Account getClientPlayerAccount() {
@@ -47,21 +49,43 @@ public class EntityTracker implements StorableObject {
         return entityId;
     }
 
+    public int addEntity(final UniqueEntityId uniqueEntityId) {
+        final int entityId = this.ID_COUNTER.getAndIncrement();
+        this.entityMap.put(uniqueEntityId, entityId);
+        return entityId;
+    }
+
     public void removePlayer(final String uniquePlayerId) {
         this.playerMap.remove(uniquePlayerId);
         this.accountMap.remove(uniquePlayerId);
+    }
+
+    public void removeEntity(final UniqueEntityId uniqueEntityId) {
+        this.entityMap.remove(uniqueEntityId);
     }
 
     public boolean hasPlayer(final String uniquePlayerId) {
         return this.playerMap.containsKey(uniquePlayerId);
     }
 
+    public boolean hasEntity(final UniqueEntityId uniqueEntityId) {
+        return this.entityMap.containsKey(uniqueEntityId);
+    }
+
     public int getEntityIdByUniquePlayerId(final String uniquePlayerId) {
         return this.playerMap.get(uniquePlayerId);
     }
 
+    public int getEntityIdByUniqueEntityId(final UniqueEntityId uniqueEntityId) {
+        return this.entityMap.get(uniqueEntityId);
+    }
+
     public String getUniquePlayerIdByEntityId(final int entityId) {
         return this.playerMap.inverse().get(entityId);
+    }
+
+    public UniqueEntityId getUniqueEntityIdByEntityId(final int entityId) {
+        return this.entityMap.inverse().get(entityId);
     }
 
     public Account getAccountByUniquePlayerId(final String uniquePlayerId) {

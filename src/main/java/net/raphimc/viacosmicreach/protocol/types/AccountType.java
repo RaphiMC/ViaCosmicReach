@@ -20,8 +20,9 @@ package net.raphimc.viacosmicreach.protocol.types;
 import com.viaversion.viaversion.api.type.Type;
 import com.viaversion.viaversion.libs.gson.JsonObject;
 import io.netty.buffer.ByteBuf;
-import net.raphimc.viacosmicreach.protocol.model.Account;
-import net.raphimc.viacosmicreach.protocol.model.OfflineAccount;
+import net.raphimc.viacosmicreach.protocol.model.account.Account;
+import net.raphimc.viacosmicreach.protocol.model.account.ItchAccount;
+import net.raphimc.viacosmicreach.protocol.model.account.OfflineAccount;
 
 public class AccountType extends Type<Account> {
 
@@ -32,12 +33,22 @@ public class AccountType extends Type<Account> {
     @Override
     public Account read(ByteBuf buffer) {
         final String type = CosmicReachTypes.STRING.read(buffer);
-        final JsonObject obj = CosmicReachTypes.JSON_OBJECT.read(buffer);
+        JsonObject obj = CosmicReachTypes.JSON_OBJECT.read(buffer);
 
         final String username = obj.get("username").getAsString();
         final String uniqueId = obj.get("uniqueId").getAsString();
         return switch (type) {
             case OfflineAccount.TYPE -> new OfflineAccount(username, uniqueId);
+            case ItchAccount.TYPE -> {
+                final long expiresAtEpochSecond = obj.get("expiresAtEpochSecond").getAsLong();
+                final JsonObject profile = obj.getAsJsonObject("profile");
+
+                final String displayName = profile.has("display_name") ? profile.get("display_name").getAsString() : username;
+                final String coverUrl = profile.has("cover_url") && !profile.get("cover_url").isJsonNull() ? profile.get("cover_url").getAsString() : null;
+                final String url = profile.get("url").getAsString().trim();
+                final long id = profile.get("id").getAsLong();
+                yield new ItchAccount(username, uniqueId, displayName, coverUrl, url, id, expiresAtEpochSecond);
+            }
             default -> throw new IllegalArgumentException("Unexpected account type: " + type);
         };
     }
@@ -47,6 +58,17 @@ public class AccountType extends Type<Account> {
         final JsonObject obj = new JsonObject();
         obj.addProperty("username", value.username());
         obj.addProperty("uniqueId", value.uniqueId());
+
+        if (value instanceof ItchAccount itchAccount) {
+            final JsonObject profile = new JsonObject();
+            profile.addProperty("username", itchAccount.username().replace(itchAccount.type() + ':', ""));
+            profile.addProperty("display_name", itchAccount.displayName());
+            profile.addProperty("cover_url", itchAccount.coverUrl());
+            profile.addProperty("url", itchAccount.url());
+            profile.addProperty("id", itchAccount.id());
+            profile.addProperty("expiresAtEpochSecond", itchAccount.expiresAtEpochSecond());
+            obj.add("profile", profile);
+        }
 
         CosmicReachTypes.STRING.write(buffer, value.type());
         CosmicReachTypes.JSON_OBJECT.write(buffer, obj);

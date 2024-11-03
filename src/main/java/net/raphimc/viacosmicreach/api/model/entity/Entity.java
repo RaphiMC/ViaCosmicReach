@@ -15,29 +15,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package net.raphimc.viacosmicreach.api;
+package net.raphimc.viacosmicreach.api.model.entity;
 
-import com.viaversion.viaversion.api.protocol.version.ProtocolVersion;
-import com.viaversion.viaversion.protocol.RedirectProtocolVersion;
-import net.raphimc.viacosmicreach.protocol.data.ProtocolConstants;
+import com.viaversion.viaversion.api.minecraft.Vector3f;
+import com.viaversion.viaversion.libs.gson.JsonObject;
+import finalforeach.cosmicreach.savelib.crbin.CRBinDeserializer;
 
-import java.util.ArrayList;
-import java.util.List;
+public class Entity {
 
-public class CosmicReachProtocolVersion {
+    private Vector3f position = new Vector3f(0F, 0F, 0F);
 
-    public static final List<ProtocolVersion> PROTOCOLS = new ArrayList<>();
+    public void readFromCrBin(final CRBinDeserializer crBin) {
 
-    public static final ProtocolVersion cosmicReachLatest = new RedirectProtocolVersion(0, "CosmicReach 0.3.6", ProtocolConstants.MINECRAFT_VERSION) {
-        @Override
-        public ProtocolVersion getBaseProtocolVersion() {
-            return null;
-        }
-    };
+    }
 
-    static {
-        ProtocolVersion.register(cosmicReachLatest);
-        PROTOCOLS.add(cosmicReachLatest);
+    public void readFromJson(final JsonObject json) {
+
     }
 
 }

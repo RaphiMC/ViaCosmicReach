@@ -18,25 +18,60 @@
 package net.raphimc.viacosmicreach.viaproxy;
 
 import net.lenni0451.lambdaevents.EventHandler;
+import net.lenni0451.reflect.stream.RStream;
 import net.raphimc.netminecraft.constants.IntendedState;
 import net.raphimc.netminecraft.constants.MCPipeline;
 import net.raphimc.viacosmicreach.api.CosmicReachProtocolVersion;
 import net.raphimc.viacosmicreach.netty.LengthCodec;
 import net.raphimc.viacosmicreach.netty.PacketIdCodec;
+import net.raphimc.viacosmicreach.protocol.storage.ItchAccountStorage;
 import net.raphimc.vialoader.netty.VLPipeline;
 import net.raphimc.viaproxy.ViaProxy;
 import net.raphimc.viaproxy.plugins.ViaProxyPlugin;
-import net.raphimc.viaproxy.plugins.events.PreConnectEvent;
-import net.raphimc.viaproxy.plugins.events.ProtocolTranslatorInitEvent;
-import net.raphimc.viaproxy.plugins.events.Proxy2ServerChannelInitializeEvent;
+import net.raphimc.viaproxy.plugins.events.*;
 import net.raphimc.viaproxy.plugins.events.types.ITyped;
 import net.raphimc.viaproxy.proxy.session.ProxyConnection;
+import net.raphimc.viaproxy.saves.impl.accounts.Account;
+import net.raphimc.viaproxy.ui.I18n;
+import net.raphimc.viaproxy.ui.ViaProxyWindow;
+
+import javax.swing.*;
 
 public class ViaCosmicReachPlugin extends ViaProxyPlugin {
 
     @Override
     public void onEnable() {
         ViaProxy.EVENT_MANAGER.register(this);
+    }
+
+    @EventHandler
+    private void onViaProxyLoaded(final ViaProxyLoadedEvent event) {
+        if (ViaProxy.getViaProxyWindow() == null) {
+            return;
+        }
+        final ViaProxyWindow ui = ViaProxy.getViaProxyWindow();
+
+        final JPanel accountsTabPanel = RStream.of(ui.accountsTab).withSuper().fields().by("contentPane").get();
+        final JPanel body = (JPanel) accountsTabPanel.getComponent(0);
+        final JPanel borderPanel = (JPanel) body.getComponent(body.getComponentCount() - 1);
+        final JPanel buttonPanel = (JPanel) borderPanel.getComponent(0);
+
+        final JButton addItchAccountButton = new JButton("Itch Account");
+        addItchAccountButton.addActionListener(e -> {
+            final String apiKey = JOptionPane.showInputDialog(ui, "Itch API Key", "Add Account", JOptionPane.PLAIN_MESSAGE);
+            if (apiKey != null && !apiKey.trim().isEmpty()) {
+                try {
+                    final ItchAccount account = new ItchAccount(apiKey.trim());
+                    ViaProxy.getSaveManager().accountsSave.addAccount(account);
+                    ViaProxy.getSaveManager().save();
+                    RStream.of(ui.accountsTab).methods().by("addAccount").invokeArgs(account);
+                    ViaProxyWindow.showInfo(I18n.get("tab.accounts.add.success", account.getName()));
+                } catch (Throwable t) {
+                    SwingUtilities.invokeLater(() -> ViaProxyWindow.showException(t));
+                }
+            }
+        });
+        buttonPanel.add(addItchAccountButton);
     }
 
     @EventHandler
@@ -65,6 +100,21 @@ public class ViaCosmicReachPlugin extends ViaProxyPlugin {
                 }
                 event.setCancelMessage("§7ViaProxy is working!\n§7Connect to join the configured server");
             }
+        }
+    }
+
+    @EventHandler
+    private void handleItchAccount(FillPlayerDataEvent event) {
+        final Account account = event.getProxyConnection().getUserOptions().account();
+        if (event.getProxyConnection().getServerVersion().equals(CosmicReachProtocolVersion.cosmicReachLatest) && account instanceof ItchAccount itchAccount) {
+            final net.raphimc.viacosmicreach.protocol.model.account.ItchAccount itchAccountModel = net.raphimc.viacosmicreach.protocol.model.account.ItchAccount.create(
+                    itchAccount.getUsername(),
+                    itchAccount.getDisplayName(),
+                    itchAccount.getCoverUrl(),
+                    itchAccount.getUrl(),
+                    itchAccount.getId()
+            );
+            event.getProxyConnection().getUserConnection().put(new ItchAccountStorage(itchAccountModel, itchAccount.getApiKey()));
         }
     }
 

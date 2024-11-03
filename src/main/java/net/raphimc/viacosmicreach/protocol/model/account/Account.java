@@ -15,29 +15,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package net.raphimc.viacosmicreach.api;
+package net.raphimc.viacosmicreach.protocol.model.account;
 
-import com.viaversion.viaversion.api.protocol.version.ProtocolVersion;
-import com.viaversion.viaversion.protocol.RedirectProtocolVersion;
-import net.raphimc.viacosmicreach.protocol.data.ProtocolConstants;
+public abstract class Account {
 
-import java.util.ArrayList;
-import java.util.List;
+    private final String username;
+    private final String uniqueId;
 
-public class CosmicReachProtocolVersion {
+    public Account(final String username, final String uniqueId) {
+        this.username = username;
+        this.uniqueId = uniqueId;
+    }
 
-    public static final List<ProtocolVersion> PROTOCOLS = new ArrayList<>();
+    public abstract String type();
 
-    public static final ProtocolVersion cosmicReachLatest = new RedirectProtocolVersion(0, "CosmicReach 0.3.6", ProtocolConstants.MINECRAFT_VERSION) {
-        @Override
-        public ProtocolVersion getBaseProtocolVersion() {
-            return null;
-        }
-    };
+    public String displayName() {
+        return this.username.replace(this.type() + ':', "");
+    }
 
-    static {
-        ProtocolVersion.register(cosmicReachLatest);
-        PROTOCOLS.add(cosmicReachLatest);
+    public String username() {
+        return this.username;
+    }
+
+    public String uniqueId() {
+        return this.uniqueId;
     }
 
 }

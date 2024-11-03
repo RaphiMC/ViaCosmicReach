@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package net.raphimc.viacosmicreach.protocol.model;
+package net.raphimc.viacosmicreach.protocol.model.account;
 
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -23,12 +23,12 @@ public class OfflineAccount extends Account {
 
     public static final String TYPE = "offline";
 
-    public OfflineAccount(final String username, final String uniqueId) {
-        super(username, uniqueId);
+    public static OfflineAccount create(final String username) {
+        return new OfflineAccount(TYPE + ':' + username, TYPE + "_id:" + ThreadLocalRandom.current().nextLong(Long.MAX_VALUE));
     }
 
-    public static OfflineAccount create(final String username) {
-        return new OfflineAccount(TYPE + ':' + username, TYPE + ':' + ThreadLocalRandom.current().nextLong(Long.MAX_VALUE));
+    public OfflineAccount(final String username, final String uniqueId) {
+        super(username, uniqueId);
     }
 
     @Override

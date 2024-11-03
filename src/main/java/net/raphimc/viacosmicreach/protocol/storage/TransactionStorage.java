@@ -28,17 +28,17 @@ public class TransactionStorage implements StorableObject {
     private final AtomicInteger transactionId = new AtomicInteger(1);
     private final Int2ObjectMap<Long> pendingTransactions = new Int2ObjectOpenHashMap<>();
 
-    public int createJavaTransactionId(final Long cosmicReachId) {
-        final int javaId = this.transactionId.getAndIncrement();
-        this.pendingTransactions.put(javaId, cosmicReachId);
-        return javaId;
+    public int createMinecraftTransactionId(final Long cosmicReachId) {
+        final int minecraftId = this.transactionId.getAndIncrement();
+        this.pendingTransactions.put(minecraftId, cosmicReachId);
+        return minecraftId;
     }
 
-    public Long getAndRemoveCosmicReachTransactionId(final int javaId) {
-        if (!this.pendingTransactions.containsKey(javaId)) {
-            throw new IllegalArgumentException("No transaction found with id " + javaId);
+    public Long getAndRemoveCosmicReachTransactionId(final int minecraftId) {
+        if (!this.pendingTransactions.containsKey(minecraftId)) {
+            throw new IllegalArgumentException("No transaction found with id " + minecraftId);
         } else {
-            return this.pendingTransactions.remove(javaId);
+            return this.pendingTransactions.remove(minecraftId);
         }
     }
 

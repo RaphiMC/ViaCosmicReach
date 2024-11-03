@@ -45,6 +45,7 @@ import com.viaversion.viaversion.protocols.v1_20_3to1_20_5.packet.ServerboundCon
 import com.viaversion.viaversion.protocols.v1_20_3to1_20_5.packet.ServerboundPackets1_20_5;
 import com.viaversion.viaversion.protocols.v1_20_5to1_21.packet.ClientboundConfigurationPackets1_21;
 import com.viaversion.viaversion.protocols.v1_20_5to1_21.packet.ClientboundPackets1_21;
+import finalforeach.cosmicreach.savelib.crbin.CRBinDeserializer;
 import net.raphimc.viabedrock.api.util.BitSets;
 import net.raphimc.viabedrock.api.util.MathUtil;
 import net.raphimc.viabedrock.protocol.data.enums.java.GameEventType;
@@ -54,11 +55,14 @@ import net.raphimc.viacosmicreach.ClientboundCosmicReachPackets;
 import net.raphimc.viacosmicreach.ServerboundCosmicReachPackets;
 import net.raphimc.viacosmicreach.ViaCosmicReach;
 import net.raphimc.viacosmicreach.api.chunk.CosmicReachChunkSection;
+import net.raphimc.viacosmicreach.api.util.CRBinUtil;
 import net.raphimc.viacosmicreach.api.util.TextUtil;
 import net.raphimc.viacosmicreach.protocol.data.CosmicReachMappingData;
 import net.raphimc.viacosmicreach.protocol.data.ProtocolConstants;
-import net.raphimc.viacosmicreach.protocol.model.Account;
-import net.raphimc.viacosmicreach.protocol.model.OfflineAccount;
+import net.raphimc.viacosmicreach.protocol.data.enums.NetworkSettingType;
+import net.raphimc.viacosmicreach.protocol.model.UniqueEntityId;
+import net.raphimc.viacosmicreach.protocol.model.account.Account;
+import net.raphimc.viacosmicreach.protocol.model.account.OfflineAccount;
 import net.raphimc.viacosmicreach.protocol.storage.*;
 import net.raphimc.viacosmicreach.protocol.task.ChunkTrackerTickTask;
 import net.raphimc.viacosmicreach.protocol.task.KeepAliveTask;
@@ -73,6 +77,7 @@ public class CosmicReachProtocol extends StatelessTransitionProtocol<Clientbound
 
     public CosmicReachProtocol() {
         super(ClientboundCosmicReachPackets.class, ClientboundPackets1_21.class, ServerboundCosmicReachPackets.class, ServerboundPackets1_20_5.class);
+        CRBinUtil.initCrBin();
     }
 
     @Override
@@ -86,25 +91,26 @@ public class CosmicReachProtocol extends StatelessTransitionProtocol<Clientbound
                 final int packetId = wrapper.read(Types.INT); // packet id
                 packetMapping.put(packetName, packetId);
             }
+            wrapper.read(CosmicReachTypes.STRING); // game version
             wrapper.user().put(new ProtocolStorage(packetMapping));
         });
         this.registerClientbound(ClientboundCosmicReachPackets.TRANSACTION, ClientboundPackets1_21.PING, wrapper -> {
             final TransactionStorage transactionStorage = wrapper.user().get(TransactionStorage.class);
-            wrapper.write(Types.INT, transactionStorage.createJavaTransactionId(wrapper.read(Types.LONG))); // id
+            wrapper.write(Types.INT, transactionStorage.createMinecraftTransactionId(wrapper.read(Types.LONG))); // id
         });
-        this.registerClientbound(ClientboundCosmicReachPackets.DISCONNECT, ClientboundPackets1_21.REMOVE_ENTITIES, wrapper -> {
+        this.registerClientbound(ClientboundCosmicReachPackets.REMOVED_PLAYER, ClientboundPackets1_21.REMOVE_ENTITIES, wrapper -> {
             final EntityTracker entityTracker = wrapper.user().get(EntityTracker.class);
-            final String playerUniqueId = wrapper.read(CosmicReachTypes.STRING); // player unique id
+            final String uniquePlayerId = wrapper.read(CosmicReachTypes.STRING); // unique player id
 
-            if (!entityTracker.hasPlayer(playerUniqueId)) {
+            if (!entityTracker.hasPlayer(uniquePlayerId)) {
                 wrapper.cancel();
                 return;
             }
 
-            final int entityId = entityTracker.getEntityIdByUniquePlayerId(playerUniqueId);
+            final int entityId = entityTracker.getEntityIdByUniquePlayerId(uniquePlayerId);
             wrapper.write(Types.VAR_INT_ARRAY_PRIMITIVE, new int[]{entityId}); // entity ids
 
-            final Account account = entityTracker.getAccountByUniquePlayerId(playerUniqueId);
+            final Account account = entityTracker.getAccountByUniquePlayerId(uniquePlayerId);
             final PacketWrapper systemChat = PacketWrapper.create(ClientboundPackets1_21.SYSTEM_CHAT, wrapper.user());
             systemChat.write(Types.TAG, TextUtil.stringToNbt(account.displayName() + " has left the game."));
             systemChat.write(Types.BOOLEAN, false); // overlay
@@ -114,7 +120,34 @@ public class CosmicReachProtocol extends StatelessTransitionProtocol<Clientbound
             playerInfoRemove.write(Types.UUID_ARRAY, new UUID[]{new UUID(0L, entityId)}); // uuid
             playerInfoRemove.send(CosmicReachProtocol.class);
 
-            entityTracker.removePlayer(playerUniqueId);
+            entityTracker.removePlayer(uniquePlayerId);
+        });
+        this.registerClientbound(ClientboundCosmicReachPackets.END_TICK, ClientboundPackets1_21.SET_TIME, wrapper -> {
+            wrapper.cancel();
+            // TODO: Implement
+        });
+        this.registerClientbound(ClientboundCosmicReachPackets.SET_NETWORK_SETTING, null, wrapper -> {
+            wrapper.cancel();
+            final String key = wrapper.read(CosmicReachTypes.STRING); // key
+            final NetworkSettingType type = NetworkSettingType.values()[wrapper.read(Types.BYTE)]; // type id
+            switch (type) {
+                case INT -> wrapper.user().get(NetworkSettingsStorage.class).setIntProperty(key, wrapper.read(Types.INT));
+                case BOOL -> wrapper.user().get(NetworkSettingsStorage.class).setBooleanProperty(key, wrapper.read(Types.BOOLEAN));
+                default -> throw new IllegalStateException("Unhandled NetworkSettingType: " + type);
+            }
+        });
+        this.registerClientbound(ClientboundCosmicReachPackets.CHALLENGE_LOGIN, null, wrapper -> {
+            wrapper.cancel();
+            if (wrapper.user().has(ItchAccountStorage.class)) {
+                final String challenge = wrapper.read(CosmicReachTypes.STRING); // challenge
+                final String sessionToken = wrapper.user().get(ItchAccountStorage.class).auth(challenge);
+
+                final PacketWrapper itchSessionToken = PacketWrapper.create(ServerboundCosmicReachPackets.ITCH_SESSION_TOKEN, wrapper.user());
+                itchSessionToken.write(CosmicReachTypes.STRING, sessionToken); // session token
+                itchSessionToken.sendToServer(CosmicReachProtocol.class);
+            } else {
+                throw new IllegalStateException("Not logged in with Itch");
+            }
         });
         this.registerClientbound(ClientboundCosmicReachPackets.PLAYER, ClientboundPackets1_21.ADD_ENTITY, wrapper -> {
             final EntityTracker entityTracker = wrapper.user().get(EntityTracker.class);
@@ -122,6 +155,11 @@ public class CosmicReachProtocol extends StatelessTransitionProtocol<Clientbound
             wrapper.read(CosmicReachTypes.JSON_OBJECT); // player
             final boolean justJoined = wrapper.read(Types.BOOLEAN); // just joined
 
+            if (entityTracker.getClientPlayerAccount().uniqueId().equals(account.uniqueId())) {
+                // TODO: Zone change?
+                wrapper.cancel();
+                return;
+            }
             if (entityTracker.hasPlayer(account.uniqueId())) {
                 wrapper.cancel();
                 return;
@@ -137,7 +175,7 @@ public class CosmicReachProtocol extends StatelessTransitionProtocol<Clientbound
             final UUID uuid = new UUID(0L, entityId);
 
             final PacketWrapper playerInfoUpdate = PacketWrapper.create(ClientboundPackets1_21.PLAYER_INFO_UPDATE, wrapper.user());
-            playerInfoUpdate.write(Types.PROFILE_ACTIONS_ENUM1_19_3, BitSets.create(6, PlayerInfoUpdateAction.ADD_PLAYER.ordinal(), PlayerInfoUpdateAction.UPDATE_LISTED.ordinal())); // actions
+            playerInfoUpdate.write(Types.PROFILE_ACTIONS_ENUM1_19_3, BitSets.create(6, PlayerInfoUpdateAction.ADD_PLAYER, PlayerInfoUpdateAction.UPDATE_LISTED)); // actions
             playerInfoUpdate.write(Types.VAR_INT, 1); // length
             playerInfoUpdate.write(Types.UUID, uuid); // uuid
             playerInfoUpdate.write(Types.STRING, account.displayName()); // username
@@ -194,7 +232,10 @@ public class CosmicReachProtocol extends StatelessTransitionProtocol<Clientbound
                 wrapper.write(Types.BYTE, (byte) 0); // flags
                 wrapper.write(Types.VAR_INT, 0); // teleport id
 
-                wrapper.user().get(PlayerPositionTracker.class).updatePosition(position.x(), position.y(), position.z());
+                final PacketWrapper setChunkCacheCenter = PacketWrapper.create(ClientboundPackets1_21.SET_CHUNK_CACHE_CENTER, wrapper.user());
+                setChunkCacheCenter.write(Types.VAR_INT, (int) position.x() >> 4); // chunk x
+                setChunkCacheCenter.write(Types.VAR_INT, (int) position.z() >> 4); // chunk z
+                setChunkCacheCenter.send(CosmicReachProtocol.class);
             } else {
                 wrapper.write(Types.VAR_INT, entityTracker.getEntityIdByUniquePlayerId(playerUniqueId)); // entity id
                 wrapper.write(Types.DOUBLE, (double) position.x()); // x
@@ -204,21 +245,110 @@ public class CosmicReachProtocol extends StatelessTransitionProtocol<Clientbound
                 wrapper.write(Types.BYTE, MathUtil.float2Byte(0F)); // pitch
                 wrapper.write(Types.BOOLEAN, false); // on ground
             }
-
         });
-        this.registerClientbound(ClientboundCosmicReachPackets.ZONE, ClientboundPackets1_21.SYSTEM_CHAT, wrapper -> {
+        this.registerClientbound(ClientboundCosmicReachPackets.ENTITY_POSITION, ClientboundPackets1_21.TELEPORT_ENTITY, wrapper -> {
+            final EntityTracker entityTracker = wrapper.user().get(EntityTracker.class);
+            final UniqueEntityId uniqueEntityId = wrapper.read(CosmicReachTypes.UNIQUE_ENTITY_ID); // unique entity id
+            final Vector3f position = wrapper.read(Types.VECTOR3F); // position
+            final Vector3f viewDirection = wrapper.read(Types.VECTOR3F); // view direction
+            wrapper.read(Types.VECTOR3F); // view direction offset
+            // TODO: Handle other fields
+
+            if (!entityTracker.hasEntity(uniqueEntityId)) {
+                wrapper.cancel();
+                return;
+            }
+
+            wrapper.write(Types.VAR_INT, entityTracker.getEntityIdByUniqueEntityId(uniqueEntityId)); // entity id
+            wrapper.write(Types.DOUBLE, (double) position.x()); // x
+            wrapper.write(Types.DOUBLE, (double) position.y()); // y
+            wrapper.write(Types.DOUBLE, (double) position.z()); // z
+            wrapper.write(Types.BYTE, MathUtil.float2Byte(0F)); // yaw
+            wrapper.write(Types.BYTE, MathUtil.float2Byte(0F)); // pitch
+            wrapper.write(Types.BOOLEAN, false); // on ground
+        });
+        this.registerClientbound(ClientboundCosmicReachPackets.ZONE, null, wrapper -> {
+            wrapper.cancel();
+            final boolean setDefault = wrapper.read(Types.BOOLEAN); // set default
             final JsonObject zoneData = wrapper.read(CosmicReachTypes.JSON_OBJECT); // zone data
+
+            if (wrapper.user().has(ZoneStorage.class)) {
+                return;
+            }
+            if (!setDefault) {
+                return;
+            }
+
+            final PacketWrapper worldReceived = PacketWrapper.create(ServerboundCosmicReachPackets.WORLD_RECIEVED, wrapper.user());
+            worldReceived.sendToServer(CosmicReachProtocol.class);
+
+            final EntityTracker entityTracker = wrapper.user().get(EntityTracker.class);
             final ZoneStorage zoneStorage = new ZoneStorage(zoneData);
             wrapper.user().put(zoneStorage);
 
-            wrapper.write(Types.TAG, TextUtil.stringToNbt("[ViaCosmicReach] Spawned in zone " + zoneStorage.getId() + " at " + zoneStorage.getSpawnX() + ", " + zoneStorage.getSpawnY() + ", " + zoneStorage.getSpawnZ() + "\nTo respawn, use /respawn")); // message
-            wrapper.write(Types.BOOLEAN, false); // overlay
+            final int entityId = entityTracker.addPlayer(entityTracker.getClientPlayerAccount());
+            final PacketWrapper login = PacketWrapper.create(ClientboundPackets1_21.LOGIN, wrapper.user());
+            login.write(Types.INT, entityId); // entity id
+            login.write(Types.BOOLEAN, false); // hardcore
+            login.write(Types.STRING_ARRAY, new String[]{"minecraft:overworld"}); // dimension types
+            login.write(Types.VAR_INT, 100); // max players
+            login.write(Types.VAR_INT, ProtocolConstants.MINECRAFT_VIEW_DISTANCE); // view distance
+            login.write(Types.VAR_INT, ProtocolConstants.MINECRAFT_VIEW_DISTANCE); // simulation distance
+            login.write(Types.BOOLEAN, false); // reduced debug info
+            login.write(Types.BOOLEAN, true); // show death screen
+            login.write(Types.BOOLEAN, false); // limited crafting
+            login.write(Types.VAR_INT, 0); // dimension id
+            login.write(Types.STRING, "minecraft:overworld"); // dimension name
+            login.write(Types.LONG, 0L); // hashed seed
+            login.write(Types.BYTE, (byte) GameMode.CREATIVE.ordinal()); // game mode
+            login.write(Types.BYTE, (byte) -1); // previous game mode
+            login.write(Types.BOOLEAN, false); // is debug
+            login.write(Types.BOOLEAN, false); // is flat
+            login.write(Types.OPTIONAL_GLOBAL_POSITION, null); // last death location
+            login.write(Types.VAR_INT, 0); // portal cooldown
+            login.write(Types.BOOLEAN, false); // enforce secure chat
+            login.send(CosmicReachProtocol.class);
+
+            final PacketWrapper tabList = PacketWrapper.create(ClientboundPackets1_21.TAB_LIST, wrapper.user());
+            tabList.write(Types.TAG, TextUtil.stringToNbt("§7https://github.com/RaphiMC/ViaCosmicReach")); // header
+            tabList.write(Types.TAG, TextUtil.stringToNbt("§3" + ViaCosmicReach.IMPL_VERSION)); // footer
+            tabList.send(CosmicReachProtocol.class);
+
+            final ProtocolInfo info = wrapper.user().getProtocolInfo();
+            final PacketWrapper playerInfoUpdate = PacketWrapper.create(ClientboundPackets1_21.PLAYER_INFO_UPDATE, wrapper.user());
+            playerInfoUpdate.write(Types.PROFILE_ACTIONS_ENUM1_19_3, BitSets.create(6, PlayerInfoUpdateAction.ADD_PLAYER, PlayerInfoUpdateAction.UPDATE_GAME_MODE, PlayerInfoUpdateAction.UPDATE_LISTED)); // actions
+            playerInfoUpdate.write(Types.VAR_INT, 1); // length
+            playerInfoUpdate.write(Types.UUID, info.getUuid()); // uuid
+            playerInfoUpdate.write(Types.STRING, info.getUsername()); // username
+            playerInfoUpdate.write(Types.VAR_INT, 0); // property count
+            playerInfoUpdate.write(Types.VAR_INT, GameMode.CREATIVE.ordinal()); // game mode
+            playerInfoUpdate.write(Types.BOOLEAN, true); // listed
+            playerInfoUpdate.send(CosmicReachProtocol.class);
+
+            final PacketWrapper playerPosition = PacketWrapper.create(ClientboundPackets1_21.PLAYER_POSITION, wrapper.user());
+            playerPosition.write(Types.DOUBLE, 0D); // x
+            playerPosition.write(Types.DOUBLE, 300D); // y
+            playerPosition.write(Types.DOUBLE, 0D); // z
+            playerPosition.write(Types.FLOAT, 0F); // yaw
+            playerPosition.write(Types.FLOAT, 0F); // pitch
+            playerPosition.write(Types.BYTE, (byte) 0); // flags
+            playerPosition.write(Types.VAR_INT, 0); // teleport id
+            playerPosition.send(CosmicReachProtocol.class);
+
+            final PacketWrapper systemChat = PacketWrapper.create(ClientboundPackets1_21.SYSTEM_CHAT, wrapper.user());
+            systemChat.write(Types.TAG, TextUtil.stringToNbt("[ViaCosmicReach] Spawned in zone " + zoneStorage.getId() + "\nTo respawn, use /respawn")); // message
+            systemChat.write(Types.BOOLEAN, false); // overlay
+            systemChat.send(CosmicReachProtocol.class);
+
+            final PacketWrapper gameEvent = PacketWrapper.create(ClientboundPackets1_21.GAME_EVENT, wrapper.user());
+            gameEvent.write(Types.UNSIGNED_BYTE, (short) GameEventType.LEVEL_CHUNKS_LOAD_START.ordinal()); // event id
+            gameEvent.write(Types.FLOAT, 0F); // value
+            gameEvent.send(CosmicReachProtocol.class);
         });
         this.registerClientbound(ClientboundCosmicReachPackets.CHUNK_COLUMN, null, wrapper -> {
             wrapper.cancel();
             final ChunkTracker chunkTracker = wrapper.user().get(ChunkTracker.class);
             wrapper.read(CosmicReachTypes.STRING); // zone id
-            // TODO: Handle other fields
             final int count = wrapper.read(Types.INT); // chunk count
             for (int i = 0; i < count; i++) {
                 final int chunkX = wrapper.read(Types.INT); // x
@@ -227,6 +357,12 @@ public class CosmicReachProtocol extends StatelessTransitionProtocol<Clientbound
                 final CosmicReachChunkSection chunkSection = wrapper.read(CosmicReachTypes.CHUNK_SECTION); // chunk section
                 chunkTracker.mergeChunkSection(chunkX, sectionY, chunkZ, chunkSection);
             }
+            wrapper.read(Types.INT); // chunk x
+            wrapper.read(Types.INT); // chunk y
+            wrapper.read(Types.INT); // chunk z
+        });
+        this.registerClientbound(ClientboundCosmicReachPackets.DISCONNECT, ClientboundPackets1_21.DISCONNECT, wrapper -> {
+            wrapper.write(Types.TAG, TextUtil.stringToNbt(wrapper.read(CosmicReachTypes.STRING))); // reason
         });
         this.registerClientbound(ClientboundCosmicReachPackets.BLOCK_REPLACE, ClientboundPackets1_21.BLOCK_UPDATE, wrapper -> {
             final ChunkTracker chunkTracker = wrapper.user().get(ChunkTracker.class);
@@ -261,6 +397,30 @@ public class CosmicReachProtocol extends StatelessTransitionProtocol<Clientbound
             wrapper.cancel();
             // TODO: Implement
         });
+        this.registerClientbound(ClientboundCosmicReachPackets.SPAWN_ENTITY, ClientboundPackets1_21.ADD_ENTITY, wrapper -> {
+            wrapper.cancel();
+            // TODO: Implement
+
+            final String type = wrapper.read(CosmicReachTypes.STRING); // entity type id
+            final CRBinDeserializer entityData = wrapper.read(CosmicReachTypes.CR_BIN).deserializer().readRawObj("entity"); // entity data
+        });
+        this.registerClientbound(ClientboundCosmicReachPackets.DESPAWN_ENTITY, ClientboundPackets1_21.REMOVE_ENTITIES, wrapper -> {
+            final EntityTracker entityTracker = wrapper.user().get(EntityTracker.class);
+            final UniqueEntityId uniqueEntityId = wrapper.read(CosmicReachTypes.UNIQUE_ENTITY_ID); // unique entity id
+
+            if (!entityTracker.hasEntity(uniqueEntityId)) {
+                wrapper.cancel();
+                return;
+            }
+
+            final int entityId = entityTracker.getEntityIdByUniqueEntityId(uniqueEntityId);
+            wrapper.write(Types.VAR_INT_ARRAY_PRIMITIVE, new int[]{entityId}); // entity ids
+            entityTracker.removeEntity(uniqueEntityId);
+        });
+        this.registerClientbound(ClientboundCosmicReachPackets.HIT_ENTITY, null, wrapper -> {
+            wrapper.cancel();
+            // TODO: Implement
+        });
 
         this.registerServerboundTransition(ServerboundHandshakePackets.CLIENT_INTENTION, null, PacketWrapper::cancel);
         this.registerServerboundTransition(ServerboundLoginPackets.HELLO, ServerboundCosmicReachPackets.LOGIN, wrapper -> {
@@ -268,9 +428,8 @@ public class CosmicReachProtocol extends StatelessTransitionProtocol<Clientbound
             final String username = wrapper.read(Types.STRING); // name
             final UUID uuid = wrapper.read(Types.UUID); // uuid
 
-            final Account account = OfflineAccount.create(username);
+            final Account account = wrapper.user().has(ItchAccountStorage.class) ? wrapper.user().get(ItchAccountStorage.class).account() : OfflineAccount.create(username);
             entityTracker.setClientPlayerAccount(account);
-            final int entityId = entityTracker.addPlayer(account);
 
             wrapper.write(CosmicReachTypes.ACCOUNT, account); // account
 
@@ -316,57 +475,10 @@ public class CosmicReachProtocol extends StatelessTransitionProtocol<Clientbound
             finishConfiguration.send(CosmicReachProtocol.class);
             wrapper.user().getProtocolInfo().setServerState(State.PLAY);
 
-            final PacketWrapper login = PacketWrapper.create(ClientboundPackets1_21.LOGIN, wrapper.user());
-            login.write(Types.INT, entityId); // entity id
-            login.write(Types.BOOLEAN, false); // hardcore
-            login.write(Types.STRING_ARRAY, new String[]{"minecraft:overworld"}); // dimension types
-            login.write(Types.VAR_INT, 100); // max players
-            login.write(Types.VAR_INT, ProtocolConstants.MINECRAFT_VIEW_DISTANCE); // view distance
-            login.write(Types.VAR_INT, ProtocolConstants.MINECRAFT_VIEW_DISTANCE); // simulation distance
-            login.write(Types.BOOLEAN, false); // reduced debug info
-            login.write(Types.BOOLEAN, true); // show death screen
-            login.write(Types.BOOLEAN, false); // limited crafting
-            login.write(Types.VAR_INT, 0); // dimension id
-            login.write(Types.STRING, "minecraft:overworld"); // dimension name
-            login.write(Types.LONG, 0L); // hashed seed
-            login.write(Types.BYTE, (byte) GameMode.CREATIVE.ordinal()); // game mode
-            login.write(Types.BYTE, (byte) -1); // previous game mode
-            login.write(Types.BOOLEAN, false); // is debug
-            login.write(Types.BOOLEAN, false); // is flat
-            login.write(Types.OPTIONAL_GLOBAL_POSITION, null); // last death location
-            login.write(Types.VAR_INT, 0); // portal cooldown
-            login.write(Types.BOOLEAN, false); // enforce secure chat
-            login.send(CosmicReachProtocol.class);
-
-            final PacketWrapper tabList = PacketWrapper.create(ClientboundPackets1_21.TAB_LIST, wrapper.user());
-            tabList.write(Types.TAG, TextUtil.stringToNbt("§7https://github.com/RaphiMC/ViaCosmicReach")); // header
-            tabList.write(Types.TAG, TextUtil.stringToNbt("§3" + ViaCosmicReach.IMPL_VERSION)); // footer
-            tabList.send(CosmicReachProtocol.class);
-
-            final PacketWrapper playerInfoUpdate = PacketWrapper.create(ClientboundPackets1_21.PLAYER_INFO_UPDATE, wrapper.user());
-            playerInfoUpdate.write(Types.PROFILE_ACTIONS_ENUM1_19_3, BitSets.create(6, PlayerInfoUpdateAction.ADD_PLAYER.ordinal(), PlayerInfoUpdateAction.UPDATE_GAME_MODE.ordinal(), PlayerInfoUpdateAction.UPDATE_LISTED.ordinal())); // actions
-            playerInfoUpdate.write(Types.VAR_INT, 1); // length
-            playerInfoUpdate.write(Types.UUID, uuid); // uuid
-            playerInfoUpdate.write(Types.STRING, username); // username
-            playerInfoUpdate.write(Types.VAR_INT, 0); // property count
-            playerInfoUpdate.write(Types.VAR_INT, GameMode.CREATIVE.ordinal()); // game mode
-            playerInfoUpdate.write(Types.BOOLEAN, true); // listed
-            playerInfoUpdate.send(CosmicReachProtocol.class);
-
-            final PacketWrapper playerPosition = PacketWrapper.create(ClientboundPackets1_21.PLAYER_POSITION, wrapper.user());
-            playerPosition.write(Types.DOUBLE, 0D); // x
-            playerPosition.write(Types.DOUBLE, 300D); // y
-            playerPosition.write(Types.DOUBLE, 0D); // z
-            playerPosition.write(Types.FLOAT, 0F); // yaw
-            playerPosition.write(Types.FLOAT, 0F); // pitch
-            playerPosition.write(Types.BYTE, (byte) 0); // flags
-            playerPosition.write(Types.VAR_INT, 0); // teleport id
-            playerPosition.send(CosmicReachProtocol.class);
-
-            final PacketWrapper gameEvent = PacketWrapper.create(ClientboundPackets1_21.GAME_EVENT, wrapper.user());
-            gameEvent.write(Types.UNSIGNED_BYTE, (short) GameEventType.LEVEL_CHUNKS_LOAD_START.ordinal()); // event id
-            gameEvent.write(Types.FLOAT, 0F); // value
-            gameEvent.send(CosmicReachProtocol.class);
+            final PacketWrapper protocolSync = PacketWrapper.create(ServerboundCosmicReachPackets.PROTOCOL_SYNC, wrapper.user());
+            protocolSync.write(Types.INT, 0); // packet definition count
+            protocolSync.write(CosmicReachTypes.STRING, wrapper.user().getProtocolInfo().serverProtocolVersion().getName().split(" ", 2)[1]); // game version
+            protocolSync.sendToServer(CosmicReachProtocol.class);
         });
         this.registerServerboundTransition(ServerboundLoginPackets.LOGIN_ACKNOWLEDGED, null, wrapper -> {
             wrapper.cancel();
@@ -396,10 +508,10 @@ public class CosmicReachProtocol extends StatelessTransitionProtocol<Clientbound
                 });
             }
         });
-        this.registerServerbound(ServerboundPackets1_20_5.CHAT_COMMAND, null, wrapper -> {
-            wrapper.cancel();
+        this.registerServerbound(ServerboundPackets1_20_5.CHAT_COMMAND, ServerboundCosmicReachPackets.COMMAND, wrapper -> {
             final String command = wrapper.read(Types.STRING); // command
             if (command.equals("respawn")) {
+                wrapper.cancel();
                 final ZoneStorage zoneStorage = wrapper.user().get(ZoneStorage.class);
                 final PacketWrapper playerPosition = PacketWrapper.create(ClientboundPackets1_21.PLAYER_POSITION, wrapper.user());
                 playerPosition.write(Types.DOUBLE, (double) zoneStorage.getSpawnX()); // x
@@ -410,6 +522,8 @@ public class CosmicReachProtocol extends StatelessTransitionProtocol<Clientbound
                 playerPosition.write(Types.BYTE, (byte) 0); // flags
                 playerPosition.write(Types.VAR_INT, 0); // teleport id
                 playerPosition.send(CosmicReachProtocol.class);
+            } else {
+                wrapper.write(CosmicReachTypes.STRING_ARRAY, command.split(" ")); // command args
             }
         });
         this.registerServerbound(ServerboundPackets1_20_5.MOVE_PLAYER_POS, ServerboundCosmicReachPackets.PLAYER_POSITION, wrapper -> {
@@ -483,6 +597,7 @@ public class CosmicReachProtocol extends StatelessTransitionProtocol<Clientbound
     @Override
     public void init(UserConnection user) {
         user.put(new ProtocolStorage());
+        user.put(new NetworkSettingsStorage());
         user.put(new TransactionStorage());
         user.put(new PlayerPositionTracker(user));
         user.put(new EntityTracker());

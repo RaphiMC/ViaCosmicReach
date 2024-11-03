@@ -37,7 +37,7 @@ repositories {
 }
 
 dependencies {
-    implementation "net.raphimc:ViaProxy:3.3.4"
+    implementation "net.raphimc:ViaProxy:3.3.6-SNAPSHOT"
 
     include "com.github.FinalForEach:Cosmic-Reach-Save-Library:487a2cdc16"
     include "org.json:json:20240303"

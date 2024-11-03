@@ -15,29 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package net.raphimc.viacosmicreach.api;
+package net.raphimc.viacosmicreach.protocol.data.enums;
 
-import com.viaversion.viaversion.api.protocol.version.ProtocolVersion;
-import com.viaversion.viaversion.protocol.RedirectProtocolVersion;
-import net.raphimc.viacosmicreach.protocol.data.ProtocolConstants;
+public enum NetworkSettingType {
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class CosmicReachProtocolVersion {
-
-    public static final List<ProtocolVersion> PROTOCOLS = new ArrayList<>();
-
-    public static final ProtocolVersion cosmicReachLatest = new RedirectProtocolVersion(0, "CosmicReach 0.3.6", ProtocolConstants.MINECRAFT_VERSION) {
-        @Override
-        public ProtocolVersion getBaseProtocolVersion() {
-            return null;
-        }
-    };
-
-    static {
-        ProtocolVersion.register(cosmicReachLatest);
-        PROTOCOLS.add(cosmicReachLatest);
-    }
+    INT,
+    BOOL
 
 }

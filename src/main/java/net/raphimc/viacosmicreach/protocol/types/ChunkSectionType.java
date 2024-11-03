@@ -21,6 +21,7 @@ import com.viaversion.viaversion.api.type.Type;
 import finalforeach.cosmicreach.savelib.blockdata.IBlockData;
 import finalforeach.cosmicreach.savelib.blockdata.LayeredBlockData;
 import finalforeach.cosmicreach.savelib.blockdata.SingleBlockData;
+import finalforeach.cosmicreach.savelib.crbin.CRBinDeserializer;
 import finalforeach.cosmicreach.savelib.lightdata.blocklight.BlockLightLayeredData;
 import finalforeach.cosmicreach.savelib.lightdata.blocklight.IBlockLightData;
 import finalforeach.cosmicreach.savelib.lightdata.blocklight.layers.IBlockLightLayer;
@@ -40,6 +41,7 @@ import net.raphimc.viacosmicreach.protocol.CosmicReachProtocol;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -115,13 +117,12 @@ public class ChunkSectionType extends Type<CosmicReachChunkSection> {
                 case BLOCKENTITY_DATA -> {
                     final byte[] crBinData = new byte[reader.readInt()];
                     reader.readFully(crBinData);
-                    // TODO: Implement CRBin deserialization
-                    /*final CRBinDeserializer crBinDeserializer = CRBinDeserializer.getNew();
+                    final CRBinDeserializer crBinDeserializer = new CRBinDeserializer();
                     crBinDeserializer.prepareForRead(ByteBuffer.wrap(crBinData));
                     final CRBinDeserializer[] crBinBlockEntities = crBinDeserializer.readRawObjArray("blockEntities");
                     for (CRBinDeserializer crBinBlockEntity : crBinBlockEntities) {
                         blockEntities.add(new CosmicReachBlockEntity(crBinBlockEntity));
-                    }*/
+                    }
                 }
                 default -> throw new RuntimeException("Unknown block entity data type: " + blockEntityDataType);
             }

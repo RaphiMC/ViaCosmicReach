@@ -15,29 +15,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package net.raphimc.viacosmicreach.api;
+package net.raphimc.viacosmicreach.protocol.types;
 
-import com.viaversion.viaversion.api.protocol.version.ProtocolVersion;
-import com.viaversion.viaversion.protocol.RedirectProtocolVersion;
-import net.raphimc.viacosmicreach.protocol.data.ProtocolConstants;
+import com.viaversion.viaversion.api.type.Type;
+import io.netty.buffer.ByteBuf;
+import net.raphimc.viacosmicreach.protocol.model.UniqueEntityId;
 
-import java.util.ArrayList;
-import java.util.List;
+public class UniqueEntityIdType extends Type<UniqueEntityId> {
 
-public class CosmicReachProtocolVersion {
+    public UniqueEntityIdType() {
+        super(UniqueEntityId.class);
+    }
 
-    public static final List<ProtocolVersion> PROTOCOLS = new ArrayList<>();
+    @Override
+    public UniqueEntityId read(ByteBuf buffer) {
+        return new UniqueEntityId(buffer.readLong(), buffer.readInt(), buffer.readInt());
+    }
 
-    public static final ProtocolVersion cosmicReachLatest = new RedirectProtocolVersion(0, "CosmicReach 0.3.6", ProtocolConstants.MINECRAFT_VERSION) {
-        @Override
-        public ProtocolVersion getBaseProtocolVersion() {
-            return null;
-        }
-    };
-
-    static {
-        ProtocolVersion.register(cosmicReachLatest);
-        PROTOCOLS.add(cosmicReachLatest);
+    @Override
+    public void write(ByteBuf buffer, UniqueEntityId value) {
+        buffer.writeLong(value.time());
+        buffer.writeInt(value.rand());
+        buffer.writeInt(value.number());
     }
 
 }

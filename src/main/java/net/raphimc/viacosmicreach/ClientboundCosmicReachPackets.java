@@ -23,21 +23,29 @@ import com.viaversion.viaversion.libs.fastutil.objects.Object2IntOpenHashMap;
 
 public enum ClientboundCosmicReachPackets implements ClientboundPacketType {
 
-    PROTOCOL_SYNC(1, "finalforeach.cosmicreach.networking.netty.packets.meta.ProtocolSyncPacket"),
-    TRANSACTION(2, "finalforeach.cosmicreach.networking.netty.packets.meta.TransactionPacket"),
-    DISCONNECT(4, "finalforeach.cosmicreach.networking.netty.packets.meta.DisconnectPacket"),
-    PLAYER(5, "finalforeach.cosmicreach.networking.netty.packets.PlayerPacket"),
-    MESSAGE(6, "finalforeach.cosmicreach.networking.netty.packets.MessagePacket"),
-    PLAYER_POSITION(7, "finalforeach.cosmicreach.networking.netty.packets.PlayerPositionPacket"),
-    ZONE(8, "finalforeach.cosmicreach.networking.netty.packets.ZonePacket"),
-    CHUNK_COLUMN(9, "finalforeach.cosmicreach.networking.netty.packets.ChunkColumnPacket"),
-    BLOCK_REPLACE(13, "finalforeach.cosmicreach.networking.netty.packets.blocks.BlockReplacePacket"),
-    PLAY_SOUND_2D(14, "finalforeach.cosmicreach.networking.netty.packets.sounds.PlaySound2DPacket"),
-    PLAY_SOUND_3D(15, "finalforeach.cosmicreach.networking.netty.packets.sounds.PlaySound3DPacket"),
-    CONTAINER_SYNC(17, "finalforeach.cosmicreach.networking.netty.packets.ContainerSyncPacket"),
-    BLOCK_ENTITY_CONTAINER_SYNC(18, "finalforeach.cosmicreach.networking.netty.packets.blocks.BlockEntityContainerSyncPacket"),
-    BLOCK_ENTITY_SCREEN(19, "finalforeach.cosmicreach.networking.netty.packets.blocks.BlockEntityScreenPacket"),
-    BLOCK_ENTITY_DATA(20, "finalforeach.cosmicreach.networking.netty.packets.blocks.BlockEntityDataPacket");
+    PROTOCOL_SYNC(1, "finalforeach.cosmicreach.networking.packets.meta.ProtocolSyncPacket"),
+    TRANSACTION(2, "finalforeach.cosmicreach.networking.packets.meta.TransactionPacket"),
+    REMOVED_PLAYER(4, "finalforeach.cosmicreach.networking.packets.meta.RemovedPlayerPacket"),
+    END_TICK(5, "finalforeach.cosmicreach.networking.packets.EndTickPacket"),
+    SET_NETWORK_SETTING(7, "finalforeach.cosmicreach.networking.packets.meta.SetNetworkSetting"),
+    CHALLENGE_LOGIN(8, "finalforeach.cosmicreach.networking.packets.meta.ChallengeLoginPacket"),
+    PLAYER(10, "finalforeach.cosmicreach.networking.packets.entities.PlayerPacket"),
+    MESSAGE(11, "finalforeach.cosmicreach.networking.packets.MessagePacket"),
+    PLAYER_POSITION(12, "finalforeach.cosmicreach.networking.packets.entities.PlayerPositionPacket"),
+    ENTITY_POSITION(13, "finalforeach.cosmicreach.networking.packets.entities.EntityPositionPacket"),
+    ZONE(14, "finalforeach.cosmicreach.networking.packets.ZonePacket"),
+    CHUNK_COLUMN(15, "finalforeach.cosmicreach.networking.packets.ChunkColumnPacket"),
+    DISCONNECT(17, "finalforeach.cosmicreach.networking.packets.meta.DisconnectPacket"),
+    BLOCK_REPLACE(21, "finalforeach.cosmicreach.networking.packets.blocks.BlockReplacePacket"),
+    PLAY_SOUND_2D(22, "finalforeach.cosmicreach.networking.packets.sounds.PlaySound2DPacket"),
+    PLAY_SOUND_3D(23, "finalforeach.cosmicreach.networking.packets.sounds.PlaySound3DPacket"),
+    CONTAINER_SYNC(26, "finalforeach.cosmicreach.networking.packets.ContainerSyncPacket"),
+    BLOCK_ENTITY_CONTAINER_SYNC(27, "finalforeach.cosmicreach.networking.packets.blocks.BlockEntityContainerSyncPacket"),
+    BLOCK_ENTITY_SCREEN(28, "finalforeach.cosmicreach.networking.packets.blocks.BlockEntityScreenPacket"),
+    BLOCK_ENTITY_DATA(29, "finalforeach.cosmicreach.networking.packets.blocks.BlockEntityDataPacket"),
+    SPAWN_ENTITY(31, "finalforeach.cosmicreach.networking.packets.entities.SpawnEntityPacket"),
+    DESPAWN_ENTITY(32, "finalforeach.cosmicreach.networking.packets.entities.DespawnEntityPacket"),
+    HIT_ENTITY(35, "finalforeach.cosmicreach.networking.packets.entities.HitEntityPacket");
 
     private static final ClientboundCosmicReachPackets[] REGISTRY = new ClientboundCosmicReachPackets[128];
     private static final Object2IntMap<String> CLASS_TO_ID = new Object2IntOpenHashMap<>();

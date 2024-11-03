@@ -15,30 +15,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package net.raphimc.viacosmicreach.protocol.model;
+package net.raphimc.viacosmicreach.protocol.types;
 
-public abstract class Account {
+import com.viaversion.viaversion.api.type.Type;
+import finalforeach.cosmicreach.savelib.crbin.CRBinDeserializer;
+import io.netty.buffer.ByteBuf;
+import net.raphimc.viacosmicreach.protocol.model.CRBin;
 
-    private final String username;
-    private final String uniqueId;
+public class CRBinType extends Type<CRBin> {
 
-    public Account(final String username, final String uniqueId) {
-        this.username = username;
-        this.uniqueId = uniqueId;
+    public CRBinType() {
+        super(CRBin.class);
     }
 
-    public abstract String type();
-
-    public String displayName() {
-        return this.username.replace(this.type() + ':', "");
+    @Override
+    public CRBin read(ByteBuf buffer) {
+        final CRBinDeserializer crBinDeserializer = new CRBinDeserializer();
+        crBinDeserializer.prepareForRead(buffer.nioBuffer());
+        return new CRBin(crBinDeserializer);
     }
 
-    public String username() {
-        return this.username;
-    }
-
-    public String uniqueId() {
-        return this.uniqueId;
+    @Override
+    public void write(ByteBuf buffer, CRBin value) {
+        buffer.writeBytes(value.serializer().toBytes());
     }
 
 }

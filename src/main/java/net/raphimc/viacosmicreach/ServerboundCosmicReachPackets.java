@@ -23,16 +23,25 @@ import com.viaversion.viaversion.libs.fastutil.objects.Object2IntOpenHashMap;
 
 public enum ServerboundCosmicReachPackets implements ServerboundPacketType {
 
-    TRANSACTION(2, "finalforeach.cosmicreach.networking.netty.packets.meta.TransactionPacket"),
-    LOGIN(3, "finalforeach.cosmicreach.networking.netty.packets.meta.LoginPacket"),
-    MESSAGE(6, "finalforeach.cosmicreach.networking.netty.packets.MessagePacket"),
-    PLAYER_POSITION(7, "finalforeach.cosmicreach.networking.netty.packets.PlayerPositionPacket"),
-    PLACE_BLOCK(10, "finalforeach.cosmicreach.networking.netty.packets.blocks.PlaceBlockPacket"),
-    BREAK_BLOCK(11, "finalforeach.cosmicreach.networking.netty.packets.blocks.BreakBlockPacket"),
-    INTERACT_BLOCK(12, "finalforeach.cosmicreach.networking.netty.packets.blocks.InteractBlockPacket"),
-    SLOT_INTERACT(16, "finalforeach.cosmicreach.networking.netty.packets.SlotInteractPacket"),
-    CONTAINER_SYNC(17, "finalforeach.cosmicreach.networking.netty.packets.ContainerSyncPacket"),
-    BLOCK_ENTITY_CONTAINER_SYNC(18, "finalforeach.cosmicreach.networking.netty.packets.blocks.BlockEntityContainerSyncPacket");
+    PROTOCOL_SYNC(1, "finalforeach.cosmicreach.networking.packets.meta.ProtocolSyncPacket"),
+    TRANSACTION(2, "finalforeach.cosmicreach.networking.packets.meta.TransactionPacket"),
+    LOGIN(3, "finalforeach.cosmicreach.networking.packets.meta.LoginPacket"),
+    WORLD_RECIEVED(6, "finalforeach.cosmicreach.networking.packets.meta.WorldRecievedGamePacket"),
+    SET_NETWORK_SETTING(7, "finalforeach.cosmicreach.networking.packets.meta.SetNetworkSetting"),
+    ITCH_SESSION_TOKEN(9, "finalforeach.cosmicreach.networking.packets.meta.ItchSessionTokenPacket"),
+    MESSAGE(11, "finalforeach.cosmicreach.networking.packets.MessagePacket"),
+    PLAYER_POSITION(12, "finalforeach.cosmicreach.networking.packets.entities.PlayerPositionPacket"),
+    COMMAND(16, "finalforeach.cosmicreach.networking.packets.CommandPacket"),
+    PLACE_BLOCK(18, "finalforeach.cosmicreach.networking.packets.blocks.PlaceBlockPacket"),
+    BREAK_BLOCK(19, "finalforeach.cosmicreach.networking.packets.blocks.BreakBlockPacket"),
+    INTERACT_BLOCK(20, "finalforeach.cosmicreach.networking.packets.blocks.InteractBlockPacket"),
+    DROP_ITEM(24, "finalforeach.cosmicreach.networking.packets.entities.DropItemPacket"),
+    SLOT_INTERACT(25, "finalforeach.cosmicreach.networking.packets.SlotInteractPacket"),
+    CONTAINER_SYNC(26, "finalforeach.cosmicreach.networking.packets.ContainerSyncPacket"),
+    BLOCK_ENTITY_CONTAINER_SYNC(27, "finalforeach.cosmicreach.networking.packets.blocks.BlockEntityContainerSyncPacket"),
+    DROP_ITEM_FROM_BLOCK_ENTITY_CONTAINER(30, "finalforeach.cosmicreach.networking.packets.blocks.DropItemFromBlockEntityContainerPacket"),
+    ATTACK_ENTITY(33, "finalforeach.cosmicreach.networking.packets.entities.AttackEntityPacket"),
+    INTERACT_ENTITY(34, "finalforeach.cosmicreach.networking.packets.entities.InteractEntityPacket");
 
     private static final ServerboundCosmicReachPackets[] REGISTRY = new ServerboundCosmicReachPackets[128];
     private static final Object2IntMap<String> CLASS_TO_ID = new Object2IntOpenHashMap<>();

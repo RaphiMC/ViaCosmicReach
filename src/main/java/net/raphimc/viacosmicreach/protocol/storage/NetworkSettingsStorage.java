@@ -18,37 +18,30 @@
 package net.raphimc.viacosmicreach.protocol.storage;
 
 import com.viaversion.viaversion.api.connection.StorableObject;
-import com.viaversion.viaversion.libs.gson.JsonObject;
 
-public class ZoneStorage implements StorableObject {
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
-    private final String id;
-    private final float spawnX;
-    private final float spawnY;
-    private final float spawnZ;
+public class NetworkSettingsStorage implements StorableObject {
 
-    public ZoneStorage(final JsonObject zoneData) {
-        this.id = zoneData.get("zoneId").getAsString();
-        final JsonObject spawn = zoneData.getAsJsonObject("spawnPoint");
-        this.spawnX = spawn.has("x") ? spawn.get("x").getAsFloat() : 0F;
-        this.spawnY = spawn.has("y") ? spawn.get("y").getAsFloat() : 0F;
-        this.spawnZ = spawn.has("z") ? spawn.get("z").getAsFloat() : 0F;
+    private final Map<String, Integer> intProperties = new HashMap<>();
+    private final Map<String, Boolean> booleanProperties = new HashMap<>();
+
+    public int getIntProperty(final String key, final int defaultValue) {
+        return this.intProperties.getOrDefault(key, defaultValue);
     }
 
-    public String getId() {
-        return this.id;
+    public boolean setIntProperty(final String key, final int value) {
+        return !Objects.equals(this.intProperties.put(key, value), value);
     }
 
-    public float getSpawnX() {
-        return this.spawnX;
+    public boolean getBooleanProperty(final String key, final boolean defaultValue) {
+        return this.booleanProperties.getOrDefault(key, defaultValue);
     }
 
-    public float getSpawnY() {
-        return this.spawnY;
-    }
-
-    public float getSpawnZ() {
-        return this.spawnZ;
+    public boolean setBooleanProperty(final String key, final boolean value) {
+        return !Objects.equals(this.booleanProperties.put(key, value), value);
     }
 
 }
