@@ -158,6 +158,9 @@ public class CosmicReachProtocol extends StatelessTransitionProtocol<Clientbound
 
             if (entityTracker.getClientPlayerAccount().uniqueId().equals(account.uniqueId())) {
                 wrapper.user().get(ChunkTracker.class).updateChunkCenter((int) playerData.entity().position().x() >> 4, (int) playerData.entity().position().z() >> 4);
+                final int entityId = entityTracker.getEntityIdByUniquePlayerId(account.uniqueId());
+                entityTracker.removePlayer(account.uniqueId());
+                entityTracker.addPlayer(entityTracker.getClientPlayerAccount(), playerData.entity().uniqueId(), entityId);
 
                 wrapper.setPacketType(ClientboundPackets1_21.PLAYER_POSITION);
                 wrapper.write(Types.DOUBLE, (double) playerData.entity().position().x()); // x
@@ -180,7 +183,7 @@ public class CosmicReachProtocol extends StatelessTransitionProtocol<Clientbound
                 systemChat.send(CosmicReachProtocol.class);
             }
 
-            final int entityId = entityTracker.addPlayer(account);
+            final int entityId = entityTracker.addPlayer(account, playerData.entity().uniqueId());
             final UUID uuid = new UUID(0L, entityId);
 
             final PacketWrapper playerInfoUpdate = PacketWrapper.create(ClientboundPackets1_21.PLAYER_INFO_UPDATE, wrapper.user());
@@ -290,7 +293,7 @@ public class CosmicReachProtocol extends StatelessTransitionProtocol<Clientbound
             final ZoneStorage zoneStorage = new ZoneStorage(zoneData);
             wrapper.user().put(zoneStorage);
 
-            final int entityId = entityTracker.addPlayer(entityTracker.getClientPlayerAccount());
+            final int entityId = entityTracker.addPlayer(entityTracker.getClientPlayerAccount(), new UniqueEntityId(System.currentTimeMillis(), 0, 0));
             final PacketWrapper login = PacketWrapper.create(ClientboundPackets1_21.LOGIN, wrapper.user());
             login.write(Types.INT, entityId); // entity id
             login.write(Types.BOOLEAN, false); // hardcore

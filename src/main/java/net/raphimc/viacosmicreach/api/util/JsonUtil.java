@@ -21,6 +21,7 @@ package net.raphimc.viacosmicreach.api.util;
 import com.viaversion.viaversion.api.minecraft.Vector3f;
 import com.viaversion.viaversion.libs.gson.JsonElement;
 import com.viaversion.viaversion.libs.gson.JsonObject;
+import net.raphimc.viacosmicreach.protocol.model.UniqueEntityId;
 
 public class JsonUtil {
 
@@ -69,9 +70,31 @@ public class JsonUtil {
         }
     }
 
-    public static Vector3f getVector3f(final JsonObject obj, final String key) {
-        final JsonObject vector = obj.getAsJsonObject(key);
-        return new Vector3f(getFloatOr(vector, "x", 0F), getFloatOr(vector, "y", 0F), getFloatOr(vector, "z", 0F));
+    public static JsonObject getObjectOr(final JsonObject obj, final String key, final JsonObject defaultValue) {
+        final JsonElement element = obj.get(key);
+        if (element != null && !element.isJsonNull()) {
+            return element.getAsJsonObject();
+        } else {
+            return defaultValue;
+        }
+    }
+
+    public static Vector3f getVector3f(final JsonObject obj, final String key, final Vector3f defaultValue) {
+        final JsonObject vectorObj = getObjectOr(obj, key, null);
+        if (vectorObj == null) {
+            return defaultValue;
+        }
+
+        return new Vector3f(getFloatOr(vectorObj, "x", 0F), getFloatOr(vectorObj, "y", 0F), getFloatOr(vectorObj, "z", 0F));
+    }
+
+    public static UniqueEntityId getUniqueId(final JsonObject obj, final String key, final UniqueEntityId defaultValue) {
+        final JsonObject uniqueIdObj = getObjectOr(obj, key, null);
+        if (uniqueIdObj == null) {
+            return defaultValue;
+        }
+
+        return new UniqueEntityId(getLongOr(uniqueIdObj, "time", 0L), getIntOr(uniqueIdObj, "rand", 0), getIntOr(uniqueIdObj, "number", 0));
     }
 
 }

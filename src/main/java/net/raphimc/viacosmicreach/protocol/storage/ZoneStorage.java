@@ -29,7 +29,7 @@ public class ZoneStorage implements StorableObject {
 
     public ZoneStorage(final JsonObject zoneData) {
         this.id = zoneData.get("zoneId").getAsString();
-        this.spawnPoint = JsonUtil.getVector3f(zoneData, "spawnPoint");
+        this.spawnPoint = JsonUtil.getVector3f(zoneData, "spawnPoint", new Vector3f(0F, 0F, 0F));
     }
 
     public String getId() {

@@ -30,7 +30,7 @@ public class EntityTracker implements StorableObject {
     private final AtomicInteger ID_COUNTER = new AtomicInteger(0);
 
     private Account clientPlayerAccount;
-    private final BiMap<String, Integer> playerMap = HashBiMap.create();
+    private final BiMap<String, UniqueEntityId> playerMap = HashBiMap.create();
     private final BiMap<UniqueEntityId, Integer> entityMap = HashBiMap.create();
     private final BiMap<String, Account> accountMap = HashBiMap.create();
 
@@ -42,9 +42,13 @@ public class EntityTracker implements StorableObject {
         this.clientPlayerAccount = clientPlayerAccount;
     }
 
-    public int addPlayer(final Account account) {
-        final int entityId = this.ID_COUNTER.getAndIncrement();
-        this.playerMap.put(account.uniqueId(), entityId);
+    public int addPlayer(final Account account, final UniqueEntityId uniqueEntityId) {
+        return this.addPlayer(account, uniqueEntityId, this.ID_COUNTER.getAndIncrement());
+    }
+
+    public int addPlayer(final Account account, final UniqueEntityId uniqueEntityId, final int entityId) {
+        this.playerMap.put(account.uniqueId(), uniqueEntityId);
+        this.entityMap.put(uniqueEntityId, entityId);
         this.accountMap.put(account.uniqueId(), account);
         return entityId;
     }
@@ -56,7 +60,8 @@ public class EntityTracker implements StorableObject {
     }
 
     public void removePlayer(final String uniquePlayerId) {
-        this.playerMap.remove(uniquePlayerId);
+        final UniqueEntityId uniqueEntityId = this.playerMap.remove(uniquePlayerId);
+        this.entityMap.remove(uniqueEntityId);
         this.accountMap.remove(uniquePlayerId);
     }
 
@@ -73,15 +78,11 @@ public class EntityTracker implements StorableObject {
     }
 
     public int getEntityIdByUniquePlayerId(final String uniquePlayerId) {
-        return this.playerMap.get(uniquePlayerId);
+        return this.entityMap.get(this.playerMap.get(uniquePlayerId));
     }
 
     public int getEntityIdByUniqueEntityId(final UniqueEntityId uniqueEntityId) {
         return this.entityMap.get(uniqueEntityId);
-    }
-
-    public String getUniquePlayerIdByEntityId(final int entityId) {
-        return this.playerMap.inverse().get(entityId);
     }
 
     public UniqueEntityId getUniqueEntityIdByEntityId(final int entityId) {
