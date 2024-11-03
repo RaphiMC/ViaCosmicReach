@@ -101,6 +101,13 @@ public class ChunkTracker extends StoredObject {
         }
     }
 
+    public void updateChunkCenter(final int chunkX, final int chunkZ) {
+        final PacketWrapper setChunkCacheCenter = PacketWrapper.create(ClientboundPackets1_21.SET_CHUNK_CACHE_CENTER, this.user());
+        setChunkCacheCenter.write(Types.VAR_INT, chunkX); // chunk x
+        setChunkCacheCenter.write(Types.VAR_INT, chunkZ); // chunk z
+        setChunkCacheCenter.send(CosmicReachProtocol.class);
+    }
+
     public void tick() {
         for (Long dirtyChunk : this.dirtyChunks) {
             final CosmicReachChunk chunk = this.chunks.get(dirtyChunk);

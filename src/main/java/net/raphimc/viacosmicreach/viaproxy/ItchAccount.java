@@ -23,6 +23,7 @@ import net.lenni0451.commons.httpclient.HttpClient;
 import net.lenni0451.commons.httpclient.constants.Headers;
 import net.lenni0451.commons.httpclient.handler.ThrowingResponseHandler;
 import net.raphimc.minecraftauth.MinecraftAuth;
+import net.raphimc.minecraftauth.util.JsonUtil;
 import net.raphimc.viaproxy.saves.impl.accounts.Account;
 
 import java.util.UUID;
@@ -42,7 +43,7 @@ public class ItchAccount extends Account {
         this.apiKey = jsonObject.get("apiKey").getAsString();
         this.username = jsonObject.get("username").getAsString();
         this.displayName = jsonObject.get("displayName").getAsString();
-        this.coverUrl = jsonObject.has("coverUrl") ? jsonObject.get("coverUrl").getAsString() : null;
+        this.coverUrl = JsonUtil.getStringOr(jsonObject, "coverUrl", null);
         this.url = jsonObject.get("url").getAsString();
         this.id = jsonObject.get("id").getAsLong();
     }
@@ -119,8 +120,8 @@ public class ItchAccount extends Account {
 
             final JsonObject user = response.get("user").getAsJsonObject();
             this.username = user.get("username").getAsString();
-            this.displayName = user.has("display_name") ? user.get("display_name").getAsString() : this.username;
-            this.coverUrl = user.has("cover_url") ? user.get("cover_url").getAsString() : null;
+            this.displayName = JsonUtil.getStringOr(user, "display_name", this.username);
+            this.coverUrl = JsonUtil.getStringOr(user, "cover_url", null);
             this.url = user.get("url").getAsString();
             this.id = user.get("id").getAsLong();
 

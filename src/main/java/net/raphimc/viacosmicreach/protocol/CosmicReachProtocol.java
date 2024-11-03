@@ -55,6 +55,7 @@ import net.raphimc.viacosmicreach.ClientboundCosmicReachPackets;
 import net.raphimc.viacosmicreach.ServerboundCosmicReachPackets;
 import net.raphimc.viacosmicreach.ViaCosmicReach;
 import net.raphimc.viacosmicreach.api.chunk.CosmicReachChunkSection;
+import net.raphimc.viacosmicreach.api.model.entity.Player;
 import net.raphimc.viacosmicreach.api.util.CRBinUtil;
 import net.raphimc.viacosmicreach.api.util.TextUtil;
 import net.raphimc.viacosmicreach.protocol.data.CosmicReachMappingData;
@@ -152,12 +153,20 @@ public class CosmicReachProtocol extends StatelessTransitionProtocol<Clientbound
         this.registerClientbound(ClientboundCosmicReachPackets.PLAYER, ClientboundPackets1_21.ADD_ENTITY, wrapper -> {
             final EntityTracker entityTracker = wrapper.user().get(EntityTracker.class);
             final Account account = wrapper.read(CosmicReachTypes.ACCOUNT); // account
-            wrapper.read(CosmicReachTypes.JSON_OBJECT); // player
+            final Player playerData = new Player(wrapper.read(CosmicReachTypes.JSON_OBJECT)); // player
             final boolean justJoined = wrapper.read(Types.BOOLEAN); // just joined
 
             if (entityTracker.getClientPlayerAccount().uniqueId().equals(account.uniqueId())) {
-                // TODO: Zone change?
-                wrapper.cancel();
+                wrapper.user().get(ChunkTracker.class).updateChunkCenter((int) playerData.entity().position().x() >> 4, (int) playerData.entity().position().z() >> 4);
+
+                wrapper.setPacketType(ClientboundPackets1_21.PLAYER_POSITION);
+                wrapper.write(Types.DOUBLE, (double) playerData.entity().position().x()); // x
+                wrapper.write(Types.DOUBLE, (double) playerData.entity().position().y()); // y
+                wrapper.write(Types.DOUBLE, (double) playerData.entity().position().z()); // z
+                wrapper.write(Types.FLOAT, 0F); // yaw
+                wrapper.write(Types.FLOAT, 0F); // pitch
+                wrapper.write(Types.BYTE, (byte) 0); // flags
+                wrapper.write(Types.VAR_INT, 0); // teleport id
                 return;
             }
             if (entityTracker.hasPlayer(account.uniqueId())) {
@@ -186,9 +195,9 @@ public class CosmicReachProtocol extends StatelessTransitionProtocol<Clientbound
             wrapper.write(Types.VAR_INT, entityId); // entity id
             wrapper.write(Types.UUID, uuid); // uuid
             wrapper.write(Types.VAR_INT, EntityTypes1_20_5.PLAYER.getId()); // type id
-            wrapper.write(Types.DOUBLE, 0D); // x
-            wrapper.write(Types.DOUBLE, 0D); // y
-            wrapper.write(Types.DOUBLE, 0D); // z
+            wrapper.write(Types.DOUBLE, (double) playerData.entity().position().x()); // x
+            wrapper.write(Types.DOUBLE, (double) playerData.entity().position().y()); // y
+            wrapper.write(Types.DOUBLE, (double) playerData.entity().position().z()); // z
             wrapper.write(Types.BYTE, MathUtil.float2Byte(0F)); // pitch
             wrapper.write(Types.BYTE, MathUtil.float2Byte(0F)); // yaw
             wrapper.write(Types.BYTE, MathUtil.float2Byte(0F)); // head yaw
@@ -216,13 +225,14 @@ public class CosmicReachProtocol extends StatelessTransitionProtocol<Clientbound
             final Vector3f viewDirection = wrapper.read(Types.VECTOR3F); // view direction
             wrapper.read(Types.VECTOR3F); // view direction offset
             wrapper.read(CosmicReachTypes.STRING); // zone id
-            // TODO: Handle other fields
 
             if (!entityTracker.hasPlayer(playerUniqueId)) {
                 wrapper.cancel();
                 return;
             }
             if (entityTracker.getClientPlayerAccount().uniqueId().equals(playerUniqueId)) {
+                wrapper.user().get(ChunkTracker.class).updateChunkCenter((int) position.x() >> 4, (int) position.z() >> 4);
+
                 wrapper.setPacketType(ClientboundPackets1_21.PLAYER_POSITION);
                 wrapper.write(Types.DOUBLE, (double) position.x()); // x
                 wrapper.write(Types.DOUBLE, (double) position.y()); // y
@@ -231,11 +241,6 @@ public class CosmicReachProtocol extends StatelessTransitionProtocol<Clientbound
                 wrapper.write(Types.FLOAT, 0F); // pitch
                 wrapper.write(Types.BYTE, (byte) 0); // flags
                 wrapper.write(Types.VAR_INT, 0); // teleport id
-
-                final PacketWrapper setChunkCacheCenter = PacketWrapper.create(ClientboundPackets1_21.SET_CHUNK_CACHE_CENTER, wrapper.user());
-                setChunkCacheCenter.write(Types.VAR_INT, (int) position.x() >> 4); // chunk x
-                setChunkCacheCenter.write(Types.VAR_INT, (int) position.z() >> 4); // chunk z
-                setChunkCacheCenter.send(CosmicReachProtocol.class);
             } else {
                 wrapper.write(Types.VAR_INT, entityTracker.getEntityIdByUniquePlayerId(playerUniqueId)); // entity id
                 wrapper.write(Types.DOUBLE, (double) position.x()); // x
@@ -252,7 +257,6 @@ public class CosmicReachProtocol extends StatelessTransitionProtocol<Clientbound
             final Vector3f position = wrapper.read(Types.VECTOR3F); // position
             final Vector3f viewDirection = wrapper.read(Types.VECTOR3F); // view direction
             wrapper.read(Types.VECTOR3F); // view direction offset
-            // TODO: Handle other fields
 
             if (!entityTracker.hasEntity(uniqueEntityId)) {
                 wrapper.cancel();
@@ -514,9 +518,9 @@ public class CosmicReachProtocol extends StatelessTransitionProtocol<Clientbound
                 wrapper.cancel();
                 final ZoneStorage zoneStorage = wrapper.user().get(ZoneStorage.class);
                 final PacketWrapper playerPosition = PacketWrapper.create(ClientboundPackets1_21.PLAYER_POSITION, wrapper.user());
-                playerPosition.write(Types.DOUBLE, (double) zoneStorage.getSpawnX()); // x
-                playerPosition.write(Types.DOUBLE, (double) zoneStorage.getSpawnY()); // y
-                playerPosition.write(Types.DOUBLE, (double) zoneStorage.getSpawnZ()); // z
+                playerPosition.write(Types.DOUBLE, (double) zoneStorage.getSpawnPoint().x()); // x
+                playerPosition.write(Types.DOUBLE, (double) zoneStorage.getSpawnPoint().y()); // y
+                playerPosition.write(Types.DOUBLE, (double) zoneStorage.getSpawnPoint().z()); // z
                 playerPosition.write(Types.FLOAT, 0F); // yaw
                 playerPosition.write(Types.FLOAT, 0F); // pitch
                 playerPosition.write(Types.BYTE, (byte) 0); // flags

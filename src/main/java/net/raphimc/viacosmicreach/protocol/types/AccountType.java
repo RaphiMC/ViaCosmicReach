@@ -20,6 +20,7 @@ package net.raphimc.viacosmicreach.protocol.types;
 import com.viaversion.viaversion.api.type.Type;
 import com.viaversion.viaversion.libs.gson.JsonObject;
 import io.netty.buffer.ByteBuf;
+import net.raphimc.viacosmicreach.api.util.JsonUtil;
 import net.raphimc.viacosmicreach.protocol.model.account.Account;
 import net.raphimc.viacosmicreach.protocol.model.account.ItchAccount;
 import net.raphimc.viacosmicreach.protocol.model.account.OfflineAccount;
@@ -43,8 +44,8 @@ public class AccountType extends Type<Account> {
                 final long expiresAtEpochSecond = obj.get("expiresAtEpochSecond").getAsLong();
                 final JsonObject profile = obj.getAsJsonObject("profile");
 
-                final String displayName = profile.has("display_name") ? profile.get("display_name").getAsString() : username;
-                final String coverUrl = profile.has("cover_url") && !profile.get("cover_url").isJsonNull() ? profile.get("cover_url").getAsString() : null;
+                final String displayName = JsonUtil.getStringOr(profile, "display_name", username);
+                final String coverUrl = JsonUtil.getStringOr(profile, "cover_url", null);
                 final String url = profile.get("url").getAsString().trim();
                 final long id = profile.get("id").getAsLong();
                 yield new ItchAccount(username, uniqueId, displayName, coverUrl, url, id, expiresAtEpochSecond);

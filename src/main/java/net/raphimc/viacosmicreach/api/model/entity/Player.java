@@ -15,29 +15,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package net.raphimc.viacosmicreach.protocol.storage;
+package net.raphimc.viacosmicreach.api.model.entity;
 
-import com.viaversion.viaversion.api.connection.StorableObject;
-import com.viaversion.viaversion.api.minecraft.Vector3f;
 import com.viaversion.viaversion.libs.gson.JsonObject;
-import net.raphimc.viacosmicreach.api.util.JsonUtil;
 
-public class ZoneStorage implements StorableObject {
+public class Player {
 
-    private final String id;
-    private final Vector3f spawnPoint;
+    private final Entity entity;
 
-    public ZoneStorage(final JsonObject zoneData) {
-        this.id = zoneData.get("zoneId").getAsString();
-        this.spawnPoint = JsonUtil.getVector3f(zoneData, "spawnPoint");
+    public Player(final JsonObject json) {
+        this.entity = new Entity(json.getAsJsonObject("entity"));
     }
 
-    public String getId() {
-        return this.id;
-    }
-
-    public Vector3f getSpawnPoint() {
-        return this.spawnPoint;
+    public Entity entity() {
+        return this.entity;
     }
 
 }

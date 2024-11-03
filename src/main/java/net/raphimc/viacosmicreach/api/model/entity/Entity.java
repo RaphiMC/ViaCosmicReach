@@ -20,17 +20,33 @@ package net.raphimc.viacosmicreach.api.model.entity;
 import com.viaversion.viaversion.api.minecraft.Vector3f;
 import com.viaversion.viaversion.libs.gson.JsonObject;
 import finalforeach.cosmicreach.savelib.crbin.CRBinDeserializer;
+import net.raphimc.viacosmicreach.api.util.JsonUtil;
 
 public class Entity {
 
+    private Vector3f viewDirection = new Vector3f(0F, 0F, 0F);
     private Vector3f position = new Vector3f(0F, 0F, 0F);
+    private Vector3f viewPositionOffset = new Vector3f(0F, 0F, 0F);
 
-    public void readFromCrBin(final CRBinDeserializer crBin) {
-
+    public Entity(final CRBinDeserializer crBin) {
     }
 
-    public void readFromJson(final JsonObject json) {
+    public Entity(final JsonObject json) {
+        this.viewDirection = JsonUtil.getVector3f(json, "viewDirection");
+        this.position = JsonUtil.getVector3f(json, "position");
+        this.viewPositionOffset = JsonUtil.getVector3f(json, "viewPositionOffset");
+    }
 
+    public Vector3f viewDirection() {
+        return this.viewDirection;
+    }
+
+    public Vector3f position() {
+        return this.position;
+    }
+
+    public Vector3f viewPositionOffset() {
+        return this.viewPositionOffset;
     }
 
 }

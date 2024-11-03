@@ -22,8 +22,6 @@ import com.viaversion.viaversion.api.connection.UserConnection;
 import com.viaversion.viaversion.api.minecraft.Vector3f;
 import com.viaversion.viaversion.api.protocol.packet.PacketWrapper;
 import com.viaversion.viaversion.api.type.Types;
-import com.viaversion.viaversion.protocols.v1_20_5to1_21.packet.ClientboundPackets1_21;
-import net.raphimc.viacosmicreach.protocol.CosmicReachProtocol;
 import net.raphimc.viacosmicreach.protocol.types.CosmicReachTypes;
 
 public class PlayerPositionTracker extends StoredObject {
@@ -52,10 +50,7 @@ public class PlayerPositionTracker extends StoredObject {
             this.lastChunkX = currentChunkX;
             this.lastChunkZ = currentChunkZ;
 
-            final PacketWrapper setChunkCacheCenter = PacketWrapper.create(ClientboundPackets1_21.SET_CHUNK_CACHE_CENTER, this.user());
-            setChunkCacheCenter.write(Types.VAR_INT, currentChunkX); // chunk x
-            setChunkCacheCenter.write(Types.VAR_INT, currentChunkZ); // chunk z
-            setChunkCacheCenter.send(CosmicReachProtocol.class);
+            this.user().get(ChunkTracker.class).updateChunkCenter(currentChunkX, currentChunkZ);
         }
     }
 
