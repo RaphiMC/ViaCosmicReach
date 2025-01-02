@@ -17,6 +17,7 @@
  */
 package net.raphimc.viacosmicreach.viaproxy;
 
+import com.viaversion.vialoader.netty.VLPipeline;
 import net.lenni0451.lambdaevents.EventHandler;
 import net.lenni0451.reflect.stream.RStream;
 import net.raphimc.netminecraft.constants.IntendedState;
@@ -25,7 +26,6 @@ import net.raphimc.viacosmicreach.api.CosmicReachProtocolVersion;
 import net.raphimc.viacosmicreach.netty.LengthCodec;
 import net.raphimc.viacosmicreach.netty.PacketIdCodec;
 import net.raphimc.viacosmicreach.protocol.storage.ItchAccountStorage;
-import net.raphimc.vialoader.netty.VLPipeline;
 import net.raphimc.viaproxy.ViaProxy;
 import net.raphimc.viaproxy.plugins.ViaProxyPlugin;
 import net.raphimc.viaproxy.plugins.events.*;

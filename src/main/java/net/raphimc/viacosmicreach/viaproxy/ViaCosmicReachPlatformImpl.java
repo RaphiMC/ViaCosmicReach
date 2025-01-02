@@ -17,8 +17,8 @@
  */
 package net.raphimc.viacosmicreach.viaproxy;
 
+import com.viaversion.vialoader.util.JLoggerToSLF4J;
 import net.raphimc.viacosmicreach.platform.ViaCosmicReachPlatform;
-import net.raphimc.vialoader.util.JLoggerToSLF4J;
 import org.slf4j.LoggerFactory;
 
 import java.util.logging.Logger;
